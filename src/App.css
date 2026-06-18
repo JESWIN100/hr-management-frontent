@@ -1,0 +1,21 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Set the premium font as the default sans */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  
+  /* Custom brand colors for a sleek, dark aesthetic */
+  --color-brand-50: #f8fafc;
+  --color-brand-500: #0f172a; 
+  --color-brand-600: #020617;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-brand-50);
+    color: var(--color-brand-600);
+    -webkit-font-smoothing: antialiased;
+  }
+}
