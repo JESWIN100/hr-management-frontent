@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { axiosInstance } from './../config/axiosInstance';
 import Toast from '../components/reusable/Toast';
 import { useNavigate } from 'react-router-dom';
-// Import your Toast component! (Adjust path as needed)
-
 
 export default function ClientVisitTracker() {
   // UI State for tabs
   const [activeTab, setActiveTab] = useState('details');
-  const navigate=useNavigate()
+  const navigate = useNavigate();
+
   // --- TOAST STATE ---
   const [toast, setToast] = useState({
     isOpen: false,
@@ -17,6 +16,10 @@ export default function ClientVisitTracker() {
     message: ''
   });
 
+  // --- DYNAMIC OPTIONS STATE ---
+  const [leadTypes, setLeadTypes] = useState([]);
+  const [statuses, setStatuses] = useState([]);
+const [feasibilityOptions, setFeasibilityOptions] = useState([]);
   // React Hook Form setup
   const { 
     register, 
@@ -26,25 +29,52 @@ export default function ClientVisitTracker() {
   } = useForm({
     defaultValues: {
       clientName: '',
-      leadType: 'Cold',
-      status: 'Open',
+      lead_type_id: '', // Changed to empty string to enforce selection if needed
+      status_id: '',
       visitDate: '',
       purposeOfVisit: '',
-      workFeasibility: 'Maybe',
+      work_feasibility_id: '',
       clientRemarks: '',
       clientPreferredTime: '',
       nextMeetingDate: ''
     }
   });
 
+  // Fetch dropdown options on mount
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        // Replace these URLs with your actual backend endpoints
+        const [leadTypeRes, statusRes,feasibilityRes] = await Promise.all([
+          axiosInstance.get('/api/leadTypes'),
+          axiosInstance.get('/api/status'),
+          axiosInstance.get('/api/status/workfesability')
+        ]);
+        console.log(leadTypeRes, statusRes);
+        
+        
+        setLeadTypes(leadTypeRes.data.data); 
+        setStatuses(statusRes.data.data);
+        setFeasibilityOptions(feasibilityRes.data.data);
+      } catch (error) {
+        console.error('Error fetching dropdown options:', error);
+        setToast({
+          isOpen: true,
+          title: 'Error',
+          message: 'Failed to load form options.'
+        });
+      }
+    };
+
+    fetchDropdownData();
+  }, []);
+
   // Form submission handler
   const onSubmit = async (data) => {
     try {
-      // Send the data to your backend
       const response = await axiosInstance.post('/api/marketing/add', data);
       console.log(response);
       
-      // Trigger SUCCESS Toast
       setToast({
         isOpen: true,
         title: 'Success',
@@ -56,8 +86,6 @@ export default function ClientVisitTracker() {
       
     } catch (error) {
       console.error('Error saving record:', error);
-      
-      // Trigger ERROR Toast
       setToast({
         isOpen: true,
         title: 'Error',
@@ -66,13 +94,11 @@ export default function ClientVisitTracker() {
     }
   };
 
-  // Helper to close the toast
   const closeToast = () => setToast(prev => ({ ...prev, isOpen: false }));
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mx-auto p-6 bg-gray-50 min-h-screen relative">
       
-      {/* --- RENDER TOAST HERE --- */}
       <Toast 
         isOpen={toast.isOpen} 
         onClose={closeToast} 
@@ -118,27 +144,36 @@ export default function ClientVisitTracker() {
             />
             {errors.clientName && <p className="text-red-500 text-xs mt-1">{errors.clientName.message}</p>}
           </div>
+          
           <div className="w-40">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Lead Type</label>
             <select 
               className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-              {...register('leadType')}
+              {...register('lead_type_id')}
             >
-              <option value="Hot">Hot</option>
-              <option value="Warm">Warm</option>
-              <option value="Cold">Cold</option>
+              <option value="" disabled>Select Type</option>
+              {leadTypes.map((type, index) => (
+               
+                <option key={index} value={type.id}>
+                  {type.status_name}
+                </option>
+              ))}
             </select>
           </div>
+          
           <div className="w-40">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Status</label>
             <select 
               className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-              {...register('status')}
+              {...register('status_id')}
             >
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Closed - Won">Closed - Won</option>
-              <option value="Closed - Lost">Closed - Lost</option>
+              <option value="" disabled>Select Status</option>
+              {statuses.map((statusItem, index) => (
+                // Modify this map if your API returns objects instead of strings
+                <option key={index} value={statusItem.id}>
+                  {statusItem.status_name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -198,11 +233,14 @@ export default function ClientVisitTracker() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Work Feasibility</label>
                 <select 
                   className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-                  {...register('workFeasibility')}
+                  {...register('work_feasibility_id')}
                 >
-                  <option value="Highly Possible">Highly Possible</option>
-                  <option value="Maybe">Maybe</option>
-                  <option value="Not Possible">Not Possible</option>
+                  <option value="" disabled>Select Feasibility</option>
+                  {feasibilityOptions.map((option, index) => (
+                    <option key={index} value={option.id}>
+                      {option.status_name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="md:col-span-2">

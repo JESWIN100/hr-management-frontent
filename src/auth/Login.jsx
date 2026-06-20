@@ -34,6 +34,10 @@ const AuthPage = () => {
       console.log(res);
       if (res.data.success === true) {
         sessionStorage.setItem("TOKEN", res.data.token); 
+        sessionStorage.setItem("NAME", res.data.user.name); 
+        sessionStorage.setItem("ROLE", res.data.user.role); 
+        sessionStorage.setItem("IMAGE", res.data.user.image); 
+        sessionStorage.setItem("EMAIL", res.data.user.email); 
         navigate('/');
       }
       

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export function StatusBadge({ status }) {
   const styles = {
@@ -22,16 +22,30 @@ export default function DataTable({
   data = [],
   showControls = true,
 }) {
+  // 1. Add state for the search term
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // 2. Filter the data based on the search term
+  const filteredData = data.filter((row) => {
+    if (!searchTerm) return true; // Show all if search is empty
+    
+    // Search through all the values in the row object (case-insensitive)
+    return Object.values(row).some((value) => {
+      if (value == null) return false;
+      return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+    });
+  });
+
   return (
-    <div className="w-full bg-white border tracking-tight border-gray-200 rounded-xl  shadow-sm">
-      {/* 1. Table Title */}
+    <div className="w-full bg-white border tracking-tight border-gray-200 rounded-xl shadow-sm">
+      {/* Table Title */}
       {title && (
         <div className="px-6 py-5 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
         </div>
       )}
 
-      {/* 2. Controls Bar (Entries & Search) */}
+      {/* Controls Bar (Entries & Search) */}
       {showControls && (
         <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 gap-4">
           <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -43,20 +57,22 @@ export default function DataTable({
             <span>entries per page</span>
           </div>
 
-          <div className="w-full sm:w-auto">
+          <div className="w-full sm:w-auto relative">
+            {/* 3. Bind the input to the searchTerm state */}
             <input
               type="text"
-              placeholder="Search"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="border border-gray-200 rounded-md px-4 py-1.5 text-sm w-full sm:w-64 outline-none focus:border-indigo-500 placeholder-slate-400"
             />
           </div>
         </div>
       )}
 
-      {/* 3. Scrollable Table Container */}
+      {/* Scrollable Table Container */}
       <div className="w-full overflow-x-auto overflow-y-auto max-h-[400px]">
         <table className="w-full min-w-max text-left border-collapse whitespace-nowrap">
-          {/* Added bg-slate-50 and z-20 so rows hide behind the header when scrolling vertically */}
           <thead className="sticky top-0 z-20 bg-slate-50 shadow-sm border-b border-gray-200">
             <tr>
               {columns.map((col, index) => (
@@ -78,18 +94,31 @@ export default function DataTable({
             </tr>
           </thead>
           <tbody>
-            {data.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-slate-50 transition-colors">
-                {columns.map((col, colIndex) => (
-                  <td
-                    key={colIndex}
-                    className="px-6 py-4 text-sm text-slate-700 border-b border-gray-100"
-                  >
-                    {col.render ? col.render(row) : row[col.key]}
-                  </td>
-                ))}
+            {/* 4. Render filteredData instead of raw data */}
+            {filteredData.length > 0 ? (
+              filteredData.map((row, rowIndex) => (
+                <tr key={rowIndex} className="hover:bg-slate-50 transition-colors">
+                  {columns.map((col, colIndex) => (
+                    <td
+                      key={colIndex}
+                      className="px-6 py-4 text-sm text-slate-700 border-b border-gray-100"
+                    >
+                      {col.render ? col.render(row) : row[col.key]}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              /* Optional: Add a fallback state when no results match the search */
+              <tr>
+                <td 
+                  colSpan={columns.length} 
+                  className="px-6 py-8 text-center text-sm text-slate-500"
+                >
+                  No matching records found.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

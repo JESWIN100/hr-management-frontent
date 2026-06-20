@@ -1,35 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { CheckCircle2, XCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Calendar } from 'lucide-react';
-
-// --- Expanded Dummy Data Setup ---
-const baseEmployees = [
-  { id: 1, name: 'James Anderson', avatar: 'https://i.pravatar.cc/150?u=1' },
-  { id: 2, name: 'William Johnson', avatar: 'https://i.pravatar.cc/150?u=2' },
-  { id: 3, name: 'Benjamin Martinez', avatar: 'https://i.pravatar.cc/150?u=3' },
-  { id: 4, name: 'Michael Davis', avatar: 'https://i.pravatar.cc/150?u=4' },
-  { id: 5, name: 'Matthew Taylor', avatar: 'https://i.pravatar.cc/150?u=5' },
-  { id: 6, name: 'David Wilson', avatar: 'https://i.pravatar.cc/150?u=6' },
-  { id: 7, name: 'Anthony Thomas', avatar: 'https://i.pravatar.cc/150?u=7' },
-  { id: 8, name: 'Christopher Moore', avatar: 'https://i.pravatar.cc/150?u=8' },
-  { id: 9, name: 'Emma Smith', avatar: 'https://i.pravatar.cc/150?u=9' },
-  { id: 10, name: 'Olivia Brown', avatar: 'https://i.pravatar.cc/150?u=10' },
-  { id: 11, name: 'Sophia Miller', avatar: 'https://i.pravatar.cc/150?u=11' },
-  { id: 12, name: 'Liam Garcia', avatar: 'https://i.pravatar.cc/150?u=12' },
-];
-
-const generateAttendance = () => {
-  return Array.from({ length: 31 }, () => {
-    const rand = Math.random();
-    if (rand > 0.85) return 'absent';
-    if (rand > 0.75) return 'empty';
-    return 'present';
-  });
-};
-
-const attendanceData = baseEmployees.map(emp => ({
-  ...emp,
-  records: generateAttendance()
-}));
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  CheckCircle2, XCircle, MinusCircle, 
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight 
+} from 'lucide-react';
+import { axiosInstance, IMAGE_BASE_URL } from '../config/axiosInstance';
 
 const months = [
   "January", "February", "March", "April", "May", "June", 
@@ -37,15 +11,66 @@ const months = [
 ];
 const years = [2022, 2023, 2024, 2025, 2026];
 
+// Define the cycle order for clicking a cell
+const STATUS_CYCLE = ['empty', 'present', 'absent', 'leave'];
+
 export default function Attendence() {
-  const [activeTab, setActiveTab] = useState('attendance');
-  
-  // New State variables for filtering and pagination
+  // --- State Variables ---
+  const [attendanceData, setAttendanceData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // --- Fetch Data from Backend ---
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const response = await axiosInstance.get(`/api/attendance?month=${selectedMonth}&year=${selectedYear}`);
+        setAttendanceData(response.data);
+        console.log(response.data);
+        
+      } catch (error) {
+        console.error("Error fetching attendance data:", error);
+      }
+    };
+
+    fetchAttendance();
+  }, [selectedMonth, selectedYear]);
+
+  // --- Handle Clicking a Cell ---
+  const handleStatusChange = async (employeeId, dayIndex, currentStatus) => {
+    // 1. Determine the next status in the cycle
+    const currentIndex = STATUS_CYCLE.indexOf(currentStatus);
+    const nextStatus = STATUS_CYCLE[(currentIndex + 1) % STATUS_CYCLE.length];
+
+    // 2. Optimistically update the UI instantly
+    setAttendanceData(prevData => 
+      prevData.map(emp => {
+        if (emp.id === employeeId) {
+          const updatedRecords = [...emp.records];
+          updatedRecords[dayIndex] = nextStatus;
+          return { ...emp, records: updatedRecords };
+        }
+        return emp;
+      })
+    );
+
+    // 3. Send the update to your backend
+    try {
+      await axiosInstance.put('/api/attendance/update', {
+        employeeId,
+        year: selectedYear,
+        month: selectedMonth,
+        day: dayIndex + 1, // dayIndex is 0-based (0 = 1st of the month)
+        status: nextStatus
+      });
+    } catch (error) {
+      console.error("Failed to update status on server:", error);
+      // Optional: If it fails, you might want to revert the local state back here
+    }
+  };
 
   // Filter and paginate data
   const filteredData = useMemo(() => {
@@ -61,64 +86,46 @@ export default function Attendence() {
     return filteredData.slice(start, start + itemsPerPage);
   }, [filteredData, currentPage]);
 
-  // Reset to page 1 when search changes
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
   };
 
+  // --- Render Icons based on status ---
   const renderStatusIcon = (status) => {
     switch (status) {
       case 'present':
         return <CheckCircle2 className="w-5 h-5 text-blue-500 bg-white rounded-full" />;
       case 'absent':
         return <XCircle className="w-5 h-5 text-red-500 bg-white rounded-full" />;
+      case 'leave':
+        return <MinusCircle className="w-5 h-5 text-amber-500 bg-white rounded-full" />; // Added Leave Status
       case 'empty':
-        return <CheckCircle2 className="w-5 h-5 text-gray-300 bg-white rounded-full" />;
+        return <div className="w-5 h-5 rounded-full border-2 border-gray-200 bg-white" />; // Made empty state a clickable ring
       default:
-        return null;
+        return <div className="w-5 h-5" />; // Fallback
     }
   };
 
-  // Simulate days in the selected month
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
   return (
-    <div className="min-h-full bg-gray-50  font-sans">
-      
-    
-
-      {/* Main Content Card */}
+    <div className="min-h-full bg-gray-50 font-sans">
       <div className="bg-white rounded-b-xl rounded-tr-xl border border-gray-200 shadow-sm relative z-0">
         
         {/* --- Filters & Search Bar --- */}
         <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50 rounded-tr-xl">
-          
-   <p>Daily Attendance</p>
+          <p className="font-semibold text-gray-700">Daily Attendance</p>
 
-          
-          {/* Search */}
-          {/* <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search employee..." 
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            />
-          </div> */}
-
-          {/* Date Filters */}
           <div className="flex gap-3 w-full sm:w-auto">
             <div className="relative flex-1 sm:flex-none">
-                 <input 
-              type="text" 
-              placeholder="Search employee..." 
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            />
+              <input 
+                type="text" 
+                placeholder="Search employee..." 
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="w-full pl-4 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
             </div>
             <div className="relative flex-1 sm:flex-none">
               <select 
@@ -145,19 +152,14 @@ export default function Attendence() {
           </div>
         </div>
 
-        {/* --- Table Container (Vertical & Horizontal Scroll) --- */}
+        {/* --- Table Container --- */}
         <div className="overflow-auto max-h-[400px] relative">
-          <table className="w-full text-sm text-left whitespace-nowrap">
+          <table className="w-full text-sm text-left whitespace-nowrap select-none">
             
-            {/* Table Header */}
             <thead className="sticky top-0 z-20 bg-blue-50/95 backdrop-blur-sm text-gray-600 border-b border-gray-200 text-xs font-medium">
               <tr>
-                {/* Top-Left Corner cell needs z-30 to stay above both left-scroll and down-scroll */}
                 <th className="sticky left-0 top-0 z-30 bg-blue-50 px-6 py-4 font-semibold min-w-[250px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-b border-gray-200">
-                  <div className="flex items-center gap-1">
-                    Employee Name 
-                    <span className="text-gray-400 text-[10px]">↑↓</span>
-                  </div>
+                  <div className="flex items-center gap-1">Employee Name</div>
                 </th>
                 {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
                   <th key={day} className="px-2 py-4 text-center min-w-[40px] border-b border-gray-200">
@@ -167,27 +169,31 @@ export default function Attendence() {
               </tr>
             </thead>
 
-            {/* Table Body */}
             <tbody className="divide-y divide-gray-100">
               {paginatedData.length > 0 ? (
                 paginatedData.map((employee) => (
                   <tr key={employee.id} className="hover:bg-gray-50/50 transition-colors">
-                    {/* Sticky First Column */}
                     <td className="sticky left-0 z-10 bg-white px-6 py-3 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                       <div className="flex items-center gap-3">
                         <img
-                          src={employee.avatar}
+                          // src={employee.avatar}
+                          src={`${IMAGE_BASE_URL}${employee?.avatar}`}
                           alt={employee.name}
                           className="w-8 h-8 rounded-full object-cover border border-gray-200"
                         />
                         <span className="font-medium text-gray-700">{employee.name}</span>
                       </div>
                     </td>
-                    {/* Attendance Days */}
+                    
+                    {/* Make these cells clickable */}
                     {employee.records.slice(0, daysInMonth).map((status, index) => (
-                      <td key={index} className="px-2 py-3">
+                      <td 
+                        key={index} 
+                        className="px-2 py-3 cursor-pointer hover:bg-blue-50 transition-colors"
+                        onClick={() => handleStatusChange(employee.id, index, status || 'empty')}
+                      >
                         <div className="flex justify-center items-center">
-                          {renderStatusIcon(status)}
+                          {renderStatusIcon(status || 'empty')}
                         </div>
                       </td>
                     ))}
@@ -196,7 +202,7 @@ export default function Attendence() {
               ) : (
                 <tr>
                   <td colSpan={daysInMonth + 1} className="px-6 py-8 text-center text-gray-500">
-                    No employees found matching "{searchTerm}"
+                    No employees found.
                   </td>
                 </tr>
               )}
@@ -226,7 +232,6 @@ export default function Attendence() {
               <ChevronLeft className="w-4 h-4" />
             </button>
             
-            {/* Page Numbers */}
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <button 
                 key={page}
