@@ -17,6 +17,8 @@ import Attendence from './pages/Attendence';
 import EmployeeAttendance from './pages/EmployeAttendence';
 import LeaveRequestForm from './pages/LeaveRequestForm';
 import LeaveApproval from './pages/LeaveApproval';
+import PrivilegeManager from './pages/Previlage';
+
 
 export default function App() {
   return (
@@ -48,6 +50,7 @@ export default function App() {
             <Route path="employee/attendence" element={<EmployeeAttendance />} />
             <Route path="leaverequest" element={<LeaveRequestForm />} />
             <Route path="leaveapproval" element={<LeaveApproval />} />
+            <Route path="settings/privilege" element={<PrivilegeManager />} />
             </Route>
           </Route>
 

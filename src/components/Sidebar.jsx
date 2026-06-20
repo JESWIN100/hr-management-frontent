@@ -3,6 +3,8 @@ import { NavLink, Link } from 'react-router-dom';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State for dropdown
+
   const navItems = [
     { 
       id: 'dashboard', 
@@ -40,6 +42,15 @@ export default function Sidebar() {
       label: 'Attendence', 
       path: '/attendence', 
       icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' 
+    },
+    // Added Settings with a subItems array
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+      subItems: [
+        { id: 'previlage', label: 'Previlage', path: '/settings/privilege' },
+      ]
     }
   ];
 
@@ -53,16 +64,14 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Glassmorphism Background Update: 
-        Using a deep violet/purple with opacity (bg-[#2D1B4E]/90) and backdrop-blur 
-      */}
+      {/* Glassmorphism Background */}
       <aside 
         className={`fixed md:relative inset-y-0 left-0 z-40 w-64 min-w-64 bg-[#2D1B4E]/90 backdrop-blur-xl text-white border-r border-white/10 flex flex-col h-full transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         md:translate-x-0`}
       >
         
-        {/* Toggle Button: Updated to match the dark glass theme */}
+        {/* Toggle Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="absolute -right-10 top-16 bg-[#2D1B4E] text-white border border-white/10 border-l-0 p-2 rounded-r-lg md:hidden flex items-center justify-center shadow-[4px_0_10px_rgba(0,0,0,0.2)] focus:outline-none"
@@ -78,47 +87,98 @@ export default function Sidebar() {
           </svg>
         </button>
 
-        {/* Header styling updated for dark theme */}
+        {/* Header */}
         <div className="p-6 border-b border-white/10">
           <h1 className="text-xl font-bold tracking-tight text-white">HR Core</h1>
           <p className="text-xs text-gray-400 mt-1">Management Portal</p>
         </div>
         
-        {/* Navigation Links updated for dark glassmorphism */}
+        {/* Navigation Links */}
         <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.id}
-              to={item.path}
-              end={item.end}
-              onClick={() => setIsOpen(false)} 
-              className={({ isActive }) =>
-                `w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
-                  isActive
-                    ? 'bg-white/15 text-white shadow-sm' // Active state: Translucent white bg, solid text
-                    : 'text-gray-300 hover:bg-white/5 hover:text-white' // Inactive state: Dim text, slight glow on hover
-                }`
-              }
-            >
-              <svg className="w-5 h-5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-              </svg>
-              <span className='font-bold tracking-tight'>{item.label}</span>
-            </NavLink>
-          ))}
+          {navItems.map((item) => {
+            
+            // Render Dropdown if subItems exist
+            if (item.subItems) {
+              return (
+                <div key={item.id} className="w-full flex flex-col">
+                  {/* Dropdown Trigger */}
+                  <button
+                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
+                      isSettingsOpen 
+                        ? 'bg-white/5 text-white' 
+                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                      </svg>
+                      <span className='font-bold tracking-tight'>{item.label}</span>
+                    </div>
+                    {/* Arrow Icon */}
+                    <svg 
+                      className={`w-4 h-4 transition-transform duration-200 ${isSettingsOpen ? 'rotate-180' : 'rotate-0'}`} 
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown Content */}
+                  <div 
+                    className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      isSettingsOpen ? 'max-h-48 opacity-100 mt-1' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    <div className="ml-5 pl-4 border-l border-white/10 space-y-1 py-1">
+                      {item.subItems.map((subItem) => (
+                        <NavLink
+                          key={subItem.id}
+                          to={subItem.path}
+                          onClick={() => setIsOpen(false)} 
+                          className={({ isActive }) =>
+                            `w-full flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                              isActive
+                                ? 'bg-white/15 text-white shadow-sm'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            }`
+                          }
+                        >
+                          {subItem.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Render Standard NavLink
+            return (
+              <NavLink
+                key={item.id}
+                to={item.path}
+                end={item.end}
+                onClick={() => setIsOpen(false)} 
+                className={({ isActive }) =>
+                  `w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
+                    isActive
+                      ? 'bg-white/15 text-white shadow-sm'
+                      : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                  }`
+                }
+              >
+                <svg className="w-5 h-5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                </svg>
+                <span className='font-bold tracking-tight'>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
 
-        {/* Create New Button (Matching the bright purple button in the image) */}
-        {/* <div className="p-4">
-            <button className="w-full bg-[#8A2BE2] hover:bg-[#9B4DFF] text-white py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center space-x-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span>Create New</span>
-            </button>
-        </div> */}
-
-        {/* Footer styling updated for dark theme */}
+        {/* Footer */}
         <div className="p-4 border-t border-white/10">
           <Link 
             to="/login" 
