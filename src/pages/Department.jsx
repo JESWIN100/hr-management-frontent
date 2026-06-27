@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { MoreVertical, Edit2, Trash2 } from 'lucide-react'; // Added Lucide Icons
+import { MoreVertical, Edit2, Trash2 } from 'lucide-react'; 
 import DataTable from '../components/reusable/DataTable';
 import SubtleButton from '../components/reusable/SubtleButton';
 import { axiosInstance } from '../config/axiosInstance';
+import { usePrivileges } from '../context/PrivilegeContext'; // ✅ Imported privilege hook
 
 export default function Department() {
+  const { canPerform } = usePrivileges();
+  
+  // ⚠️ Ensure this matches the exact string name registered in your 'menus' table
+  const MENU_NAME = 'department'; 
+
   // Modal & Dropdown state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [departmentData, setDepartmentData] = useState([]);
@@ -29,7 +35,7 @@ export default function Department() {
         withCredentials: true
       });
       
-      const rawData = res.data.data || res.data; // Added fallback just in case
+      const rawData = res.data.data || res.data; 
       const dataWithSl = rawData.map((item, index) => ({
         ...item,
         sl: index + 1
@@ -45,7 +51,6 @@ export default function Department() {
     fetchdepartment();
   }, []);
 
-  // Helper to close modal and reset form state
   const closeModal = () => {
     setIsModalOpen(false);
     setEditId(null);
@@ -53,12 +58,11 @@ export default function Department() {
     reset({
       departmentName: '',
       departmentHead: ''
-    }); // Clears form fields
+    }); 
   };
 
-  // Pre-fill form and open modal for Edit
   const handleEdit = (row) => {
-    setEditId(row.id); // Assuming your DB primary key is 'id'
+    setEditId(row.id); 
     reset({
       departmentName: row.department_name,
       departmentHead: row.department_head,
@@ -66,21 +70,19 @@ export default function Department() {
     setIsModalOpen(true);
   };
 
-  // Handle Backend Deletion
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this department?')) {
       try {
         await axiosInstance.delete(`/api/departments/${id}`, {
           withCredentials: true,
         });
-        fetchdepartment(); // Refresh table after successful deletion
+        fetchdepartment(); 
       } catch (error) {
         console.error('Failed to delete department:', error);
       }
     }
   };
 
-  // Form submission handler (Create & Update)
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
@@ -90,12 +92,10 @@ export default function Department() {
       };
 
       if (editId) {
-        // Update API call
         await axiosInstance.put(`/api/departments/edit/${editId}`, payload, {
           withCredentials: true
         });
       } else {
-        // Create API call
         await axiosInstance.post("/api/departments", payload, {
           withCredentials: true
         });
@@ -121,58 +121,75 @@ export default function Department() {
     {
       key: 'actions',
       label: 'Action',
-      render: (row) => (
-        <div className={`relative inline-block text-left ${openDropdownId === row.id ? 'z-50' : 'z-auto'}`}>
-          
-          <button
-            onClick={() => toggleDropdown(row.id)}
-            className="p-1.5 border border-gray-200 bg-white rounded-md text-gray-500 hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center"
-          >
-            <MoreVertical size={16} />
-          </button>
+      render: (row) => {
+        // ✅ Evaluate structural action permissions for this row
+        const hasEditPerm = canPerform(MENU_NAME, 'edit');
+        const hasDeletePerm = canPerform(MENU_NAME, 'delete');
 
-          {openDropdownId === row.id && (
-            <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden">
-              <button
-                onClick={() => {
-                  handleEdit(row);
-                  setOpenDropdownId(null);
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors"
-              >
-                <Edit2 size={14} className="text-gray-500" />
-                Edit
-              </button>
-              <button
-                onClick={() => {
-                  handleDelete(row.id);
-                  setOpenDropdownId(null);
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <Trash2 size={14} className="text-red-500" />
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
-      ),
+        // Hide action triggers completely if the user cannot edit or delete records
+        if (!hasEditPerm && !hasDeletePerm) return <span className="text-gray-400 text-xs">None</span>;
+
+        return (
+          <div className={`relative inline-block text-left ${openDropdownId === row.id ? 'z-50' : 'z-auto'}`}>
+            <button
+              onClick={() => toggleDropdown(row.id)}
+              className="p-1.5 border border-gray-200 bg-white rounded-md text-gray-500 hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center"
+            >
+              <MoreVertical size={16} />
+            </button>
+
+            {openDropdownId === row.id && (
+              <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden">
+                {/* ✅ Conditional Edit Action */}
+                {hasEditPerm && (
+                  <button
+                    onClick={() => {
+                      handleEdit(row);
+                      setOpenDropdownId(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <Edit2 size={14} className="text-gray-500" />
+                    Edit
+                  </button>
+                )}
+
+                {/* ✅ Conditional Delete Action */}
+                {hasDeletePerm && (
+                  <button
+                    onClick={() => {
+                      handleDelete(row.id);
+                      setOpenDropdownId(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={14} className="text-red-500" />
+                    Delete
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-4">
-        {/* Add Department Button */}
-        <div 
-          onClick={() => {
-            closeModal(); // Ensure form is fresh
-            setIsModalOpen(true);
-          }} 
-          className="inline-block mb-4 cursor-pointer"
-        >
-          <SubtleButton variant="custom">+ Add Department</SubtleButton>
-        </div>
+        {/* ✅ Conditional Add Button wrapping container block */}
+        {canPerform(MENU_NAME, 'create') && (
+          <div 
+            onClick={() => {
+              closeModal(); 
+              setIsModalOpen(true);
+            }} 
+            className="inline-block mb-4 cursor-pointer"
+          >
+            <SubtleButton variant="custom">+ Add Department</SubtleButton>
+          </div>
+        )}
 
         <DataTable
           title="Department Directory"

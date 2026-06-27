@@ -3,12 +3,16 @@ import { useForm } from 'react-hook-form';
 import { axiosInstance } from './../config/axiosInstance';
 import Toast from '../components/reusable/Toast';
 import { useNavigate } from 'react-router-dom';
-
+import { usePrivileges } from '../context/PrivilegeContext';
 export default function ClientVisitTracker() {
   // UI State for tabs
   const [activeTab, setActiveTab] = useState('details');
   const navigate = useNavigate();
 
+
+
+  const { canPerform } = usePrivileges(); // 🆕 Added
+  const MENU_NAME = 'marketing';
   // --- TOAST STATE ---
   const [toast, setToast] = useState({
     isOpen: false,
@@ -110,13 +114,14 @@ const [feasibilityOptions, setFeasibilityOptions] = useState([]);
       {/* Page Header */}
       <div className="mb-6 flex justify-end items-end">
         <div className="flex gap-3">
-           <button 
+           {/* <button 
              type="button" 
              onClick={() => navigate("/clientvisit")} 
              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
            >
              View
-           </button>
+           </button> */}
+           {canPerform(MENU_NAME, 'create') && (
            <button 
              type="submit" 
              disabled={isSubmitting}
@@ -124,6 +129,7 @@ const [feasibilityOptions, setFeasibilityOptions] = useState([]);
            >
              {isSubmitting ? 'Saving...' : 'Save Record'}
            </button>
+           )}
         </div>
       </div>
 

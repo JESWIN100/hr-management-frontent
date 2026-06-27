@@ -5,6 +5,7 @@ import SubtleButton from '../components/reusable/SubtleButton';
 import { axiosInstance, IMAGE_BASE_URL } from './../config/axiosInstance';
 import { MoreVertical, Edit2, Trash2, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { usePrivileges } from '../context/PrivilegeContext';
 export default function Employe() {
   // Modal & Dropdown state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -12,7 +13,7 @@ export default function Employe() {
   const [employeeData, setEmployeeData] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editId, setEditId] = useState(null); // Track if we are editing
-
+const { canPerform } = usePrivileges();
   const navigate=useNavigate()
 
   const [availableRoles, setAvailableRoles] = useState([]);
@@ -51,6 +52,7 @@ const [employmentStatuses, setEmploymentStatuses] = useState([]);
       console.error('Failed to fetch employees', error);
     }
   };
+  const MENU_NAME = 'employee';
 
   // Fetch dynamic dropdown data
   const fetchDropdownData = async () => {
@@ -259,74 +261,89 @@ const openCredModal = (row) => {
     { key: 'designation', label: 'Designation' },
     { key: 'phone', label: 'Phone' },
     { key: 'department_name', label: 'Department' },
-   {
+ {
       key: 'actions',
       label: 'Action',
-      render: (row) => (
-        // Keeping the z-50 fix we added earlier
-        <div className={`relative inline-block font-bold tracking-tight text-left ${openDropdownId === row.id ? 'z-50' : 'z-auto'}`}>
-          
-          {/* Replaced '•••' with MoreVertical Icon */}
-          <button
-            onClick={() => toggleDropdown(row.id)}
-            className="p-1.5 border border-gray-200 bg-white rounded-md text-gray-500 hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center"
-          >
-            <MoreVertical size={16} />
-          </button>
+      render: (row) => {
+        // Evaluate permissions for actions on this specific row layout
+        const hasEditPerm = canPerform(MENU_NAME, 'edit');
+        const hasDeletePerm = canPerform(MENU_NAME, 'delete');
 
-          {openDropdownId === row.id && (
-            <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden">
-              
-              <button
-                onClick={() => openCredModal(row)}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors"
-              >
-                <Key size={14} className="text-blue-500" />
-                Set Credentials
-              </button>
-              {/* Added Edit2 Icon */}
-              <button
-                onClick={() => {
-                  handleEdit(row);
-                  setOpenDropdownId(null);
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors"
-              >
-                <Edit2 size={14} className="text-gray-500" />
-                Edit
-              </button>
+        // Hide action column dropdown trigger altogether if user has no edit/delete permission
+        if (!hasEditPerm && !hasDeletePerm) return <span className="text-gray-400 text-xs">None</span>;
 
-              {/* Added Trash2 Icon */}
-              <button
-                onClick={() => {
-                  handleDelete(row.id);
-                  setOpenDropdownId(null);
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <Trash2 size={14} className="text-red-500" />
-                Delete
-              </button>
-              
-            </div>
-          )}
-        </div>
-      ),
+        return (
+          <div className={`relative inline-block font-bold tracking-tight text-left ${openDropdownId === row.id ? 'z-50' : 'z-auto'}`}>
+            <button
+              onClick={() => toggleDropdown(row.id)}
+              className="p-1.5 border border-gray-200 bg-white rounded-md text-gray-500 hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center"
+            >
+              <MoreVertical size={16} />
+            </button>
+
+            {openDropdownId === row.id && (
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden">
+                
+                {/* Conditional Edit UI blocks */}
+                {hasEditPerm && (
+                  <>
+                    <button
+                      onClick={() => openCredModal(row)}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <Key size={14} className="text-blue-500" />
+                      Set Credentials
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        handleEdit(row);
+                        setOpenDropdownId(null);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <Edit2 size={14} className="text-gray-500" />
+                      Edit
+                    </button>
+                  </>
+                )}
+
+                {/* Conditional Delete UI block */}
+                {hasDeletePerm && (
+                  <button
+                    onClick={() => {
+                      handleDelete(row.id);
+                      setOpenDropdownId(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={14} className="text-red-500" />
+                    Delete
+                  </button>
+                )}
+                
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-4">
-        <div 
-          onClick={() => {
-            closeModal(); // Ensure form is clear before opening to Add
-            setIsModalOpen(true);
-          }} 
-          className="inline-block mb-4 cursor-pointer"
-        >
-          <SubtleButton variant="custom">+ Add Employee</SubtleButton>
-        </div>
+      {canPerform(MENU_NAME, 'create') && (
+          <div 
+            onClick={() => {
+              closeModal();
+              setIsModalOpen(true);
+            }} 
+            className="inline-block mb-4 cursor-pointer"
+          >
+            <SubtleButton variant="custom">+ Add Employee</SubtleButton>
+          </div>
+        )}
 
         <DataTable
        

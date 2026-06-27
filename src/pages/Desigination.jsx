@@ -4,12 +4,17 @@ import { MoreVertical, Edit2, Trash2 } from 'lucide-react'; // Added Lucide Icon
 import DataTable from '../components/reusable/DataTable';
 import SubtleButton from '../components/reusable/SubtleButton';
 import { axiosInstance } from '../config/axiosInstance';
+import { usePrivileges } from '../context/PrivilegeContext';
 
 export default function Designation() {
   // Modal & Dropdown state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [designationData, setDesignationData] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
+
+const { canPerform } = usePrivileges(); 
+  const MENU_NAME = 'designation';
+
 
   // Edit & Submit state
   const [editId, setEditId] = useState(null);
@@ -126,7 +131,14 @@ export default function Designation() {
     {
       key: 'actions',
       label: 'Action',
-      render: (row) => (
+      render: (row) => {
+
+        const hasEditPerm = canPerform(MENU_NAME, 'edit');
+    const hasDeletePerm = canPerform(MENU_NAME, 'delete');
+
+   
+    if (!hasEditPerm && !hasDeletePerm) return <span className="text-gray-400 text-xs">None</span>;
+    return(
         <div className={`relative inline-block text-left ${openDropdownId === row.id ? 'z-50' : 'z-auto'}`}>
           <button
             onClick={() => toggleDropdown(row.id)}
@@ -137,6 +149,15 @@ export default function Designation() {
 
           {openDropdownId === row.id && (
             <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden">
+             {hasEditPerm && (
+              <>
+                
+                <button onClick={() => handleEdit(row)}>Edit</button>
+              </>
+            )}
+            {hasDeletePerm && (
+              <button onClick={() => handleDelete(row.id)}>Delete</button>
+            )}
               <button
                 onClick={() => {
                   handleEdit(row);
@@ -160,7 +181,8 @@ export default function Designation() {
             </div>
           )}
         </div>
-      ),
+    )
+      },
     },
   ];
 
@@ -168,15 +190,11 @@ export default function Designation() {
     <div className="h-full overflow-y-auto">
       <div className="p-4">
         {/* Add Designation Button */}
-        <div 
-          onClick={() => {
-            closeModal(); // Ensure form is clear before opening to Add
-            setIsModalOpen(true);
-          }} 
-          className="inline-block mb-4 cursor-pointer"
-        >
-          <SubtleButton variant="custom">+ Add Designation</SubtleButton>
-        </div>
+       {canPerform(MENU_NAME, 'create') && (
+  <div onClick={() => { closeModal(); setIsModalOpen(true); }} className="inline-block mb-4 cursor-pointer">
+    <SubtleButton variant="custom">+ Add Record</SubtleButton>
+  </div>
+)}
 
         <DataTable
           title="Designation Directory"

@@ -18,10 +18,17 @@ import EmployeeAttendance from './pages/EmployeAttendence';
 import LeaveRequestForm from './pages/LeaveRequestForm';
 import LeaveApproval from './pages/LeaveApproval';
 import PrivilegeManager from './pages/Previlage';
+import PrivilegeTable from './pages/PrevilageTable';
+import PrivateRoute from './context/PrivateRoute';
+import TaskManagement from './pages/TaskManagment';
+import Projects from './pages/Projects';
+import EmployeeTaskBoard from './pages/EmployeeTaskBoard';
+
 
 
 export default function App() {
   return (
+   
     <Router>
       <div className="min-h-screen bg-brand-50 text-brand-600 font-sans">
         <Routes>
@@ -38,19 +45,54 @@ export default function App() {
            
             <Route index element={<DashboardContent />} />
             
-         
-            <Route path="employee" element={<Employe />} />
-            <Route path="department" element={<Department />} />
-            <Route path="desigination" element={<Desigination />} />
+         <Route path="employee" element={
+  <PrivateRoute menuName="employee"><Employe /></PrivateRoute>
+} />
+<Route path="department" element={
+  <PrivateRoute menuName="department"><Department /></PrivateRoute>
+} />
+<Route path="designation" element={
+  <PrivateRoute menuName="designation"><Desigination /></PrivateRoute>
+} />
+<Route path="marketing" element={
+  <PrivateRoute menuName="marketing"><Marketing /></PrivateRoute>
+} />
+<Route path="attendence" element={
+  <PrivateRoute menuName="attendance"><Attendence /></PrivateRoute>
+} />
+<Route path="leaveapproval" element={
+  <PrivateRoute menuName="leave_approval"><LeaveApproval /></PrivateRoute>
+} />
+<Route path="leave_request" element={
+  <PrivateRoute menuName="leave_request"><LeaveRequestForm /></PrivateRoute>
+} />
+<Route path="clientvisit" element={
+  <PrivateRoute menuName="client_visits"><ClientVisitsList /></PrivateRoute>
+} />
+<Route path="projects" element={
+  <PrivateRoute menuName="task_management"><Projects /></PrivateRoute>
+} />
 
-            <Route path="marketing" element={<Marketing />} />
-            <Route path="clientvisit" element={<ClientVisitsList />} />
-            <Route path="clientvisit/:id" element={<ClientVisitsList />} />
-            <Route path="attendence" element={<Attendence />} />
+<Route path="/tasks" element={<TaskManagement />} />
+<Route path="/mytask" element={<EmployeeTaskBoard />} />
+
+           {/* <Route path="employee" element={<Employe />} /> */}
+                
+            {/* <Route path="employee" element={<Employe />} /> */}
+            {/* <Route path="department" element={<Department />} /> */}
+            {/* <Route path="desigination" element={<Desigination />} /> */}
+
+            {/* <Route path="marketing" element={<Marketing />} /> */}
+            {/* <Route path="clientvisit" element={<ClientVisitsList />} /> */}
+            {/* <Route path="clientvisit/:id" element={<ClientVisitsList />} /> */}
+            {/* <Route path="attendence" element={<Attendence />} /> */}
             <Route path="employee/attendence" element={<EmployeeAttendance />} />
-            <Route path="leaverequest" element={<LeaveRequestForm />} />
-            <Route path="leaveapproval" element={<LeaveApproval />} />
+            {/* <Route path="leaverequest" element={<LeaveRequestForm />} /> */}
+            {/* <Route path="leaveapproval" element={<LeaveApproval />} /> */}
             <Route path="settings/privilege" element={<PrivilegeManager />} />
+            <Route path="settings/privilege/table" element={
+              <PrivateRoute menuName="privileges"><PrivilegeTable/></PrivateRoute>
+            } />
             </Route>
           </Route>
 
@@ -77,5 +119,6 @@ export default function App() {
         </Routes>
       </div>
     </Router>
+  
   );
 }

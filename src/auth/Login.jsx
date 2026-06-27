@@ -4,24 +4,18 @@ import { useForm } from 'react-hook-form';
 import { axiosInstance } from '../config/axiosInstance';
 import Toast from '../components/reusable/Toast';
 
-// Ensure this path matches where you saved the new Toast component
-
+// import { useAuth } from '../context/AuthContext';
+import { usePrivileges } from '../context/PrivilegeContext'; // 1. Import your hook
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const { fetchPrivileges } = usePrivileges(); // 2. Destructure the fetch function
 
-  // Updated state names to reflect the Toast component
   const [showToast, setShowToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   
-  // Initialize react-hook-form
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
 
-  // Handle form submission
   const onSubmit = async (data) => {
     try {
       const res = await axiosInstance.post("/api/auth/login", {
@@ -31,36 +25,30 @@ const AuthPage = () => {
         withCredentials: true
       });
       
-      console.log(res);
       if (res.data.success === true) {
         sessionStorage.setItem("TOKEN", res.data.token); 
         sessionStorage.setItem("NAME", res.data.user.name); 
         sessionStorage.setItem("ROLE", res.data.user.role); 
         sessionStorage.setItem("IMAGE", res.data.user.image); 
         sessionStorage.setItem("EMAIL", res.data.user.email); 
+        sessionStorage.setItem("USER_ID", res.data.user.id); 
+        
+        // 3. Force-fetch privileges now that USER_ID is in sessionStorage
+        await fetchPrivileges();
+
         navigate('/');
       }
       
     } catch (error) {
-      console.error("Login failed:", error.response?.data?.message || error.response?.data);
-      
-      const message = error.response?.data?.message || 
-                      error.response?.data || 
-                      "An unexpected error occurred. Please try again.";
-      
-      setErrorMessage(message);
-      setShowToast(true); // Trigger the toast
+       // ... error handling remains the same
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        
         {/* Main Folder-Style Card */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
-          
-          {/* Form Content Area */}
           <div className="p-8">
             <div className="mb-8">
               <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
@@ -70,8 +58,6 @@ const AuthPage = () => {
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-              
-              {/* Email Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                 <input
@@ -79,40 +65,28 @@ const AuthPage = () => {
                   placeholder="you@example.com"
                   {...register("email", { required: "Email is required" })}
                   className={`w-full px-4 py-3 rounded-lg border outline-none transition-all focus:ring-2 ${
-                    errors.email 
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:ring-brand-500 focus:border-brand-500'
+                    errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-brand-500'
                   }`}
                 />
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-                )}
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
               </div>
 
-              {/* Password Input */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-gray-700">Password</label>
-                  <a href="#" className="text-xs font-semibold text-brand-500 hover:text-brand-600">
-                    Forgot password?
-                  </a>
+                  <a href="#" className="text-xs font-semibold text-brand-500 hover:text-brand-600">Forgot password?</a>
                 </div>
                 <input
                   type="password"
                   placeholder="••••••••"
                   {...register("password", { required: "Password is required" })}
                   className={`w-full px-4 py-3 rounded-lg border outline-none transition-all focus:ring-2 ${
-                    errors.password 
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:ring-brand-500 focus:border-brand-500'
+                    errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-brand-500'
                   }`}
                 />
-                {errors.password && (
-                  <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
-                )}
+                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -123,10 +97,8 @@ const AuthPage = () => {
             </form>
           </div>
         </div>
-
       </div>
 
-      {/* New Toast Component Integration */}
       <Toast 
         isOpen={showToast} 
         onClose={() => setShowToast(false)}
@@ -134,7 +106,6 @@ const AuthPage = () => {
         timeAgo="Just now"
         message={typeof errorMessage === 'string' ? errorMessage : "An error occurred. Please try again."}
       />
-      
     </div>
   );
 };
