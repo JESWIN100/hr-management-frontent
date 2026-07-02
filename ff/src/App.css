@@ -1,0 +1,55 @@
+
+@import "tailwindcss";
+
+
+html, body {
+  background-color: #f4f6f8;
+}
+
+* {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d7dde1;
+  border-radius: 999px;
+}
+
+
+@theme {
+  /* Overrides the default 'sans' font family. 
+    Tailwind automatically applies this to the <body> 
+  */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  /* Custom brand colors for a sleek, dark aesthetic */
+  --color-brand-50: #f8fafc;
+  --color-brand-500: #0f172a; 
+  --color-brand-600: #020617;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-brand-50);
+    color: var(--color-brand-600);
+    /* Enhances text crispness, especially for data tables */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  /* Utility class to hide scrollbars globally or locally */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;             /* Chrome, Safari and Opera */
+  }
+}
